@@ -7,7 +7,7 @@ x-twenty-environment: &twenty-environment
 
 services:
   server:
-    image: maystro-crm:${SOURCE_COMMIT:-local}
+    image: &twenty-image maystro-crm:2.57.1
     build:
       context: .
       dockerfile: packages/twenty-docker/twenty/Dockerfile
@@ -36,7 +36,7 @@ services:
     stop_grace_period: 120s
 
   worker:
-    image: maystro-crm:${SOURCE_COMMIT:-local}
+    image: *twenty-image
     pull_policy: never
     command: ["yarn", "worker:prod"]
     environment:
