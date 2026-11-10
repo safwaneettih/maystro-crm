@@ -1,0 +1,84 @@
+x-twenty-environment: &twenty-environment
+  SERVER_URL: ${SERVER_URL:?Set the public CRM URL}
+  PG_DATABASE_URL: postgres://twenty:${PG_DATABASE_PASSWORD:?Set a random hex password}@db:5432/twenty
+  REDIS_URL: redis://redis:6379
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Set a base64-encoded 32-byte key}
+  STORAGE_TYPE: local
+
+services:
+  server:
+    image: maystro-crm:${SOURCE_COMMIT:-local}
+    build:
+      context: .
+      dockerfile: packages/twenty-docker/twenty/Dockerfile
+      target: twenty
+      args:
+        APP_VERSION: 2.57.1
+    environment:
+      <<: *twenty-environment
+      NODE_PORT: 3000
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    expose:
+      - "3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:3000/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    stop_grace_period: 120s
+
+  worker:
+    image: maystro-crm:${SOURCE_COMMIT:-local}
+    pull_policy: never
+    command: ["yarn", "worker:prod"]
+    environment:
+      <<: *twenty-environment
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    depends_on:
+      server:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 120s
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: twenty
+      POSTGRES_USER: twenty
+      POSTGRES_PASSWORD: ${PG_DATABASE_PASSWORD:?Set a random hex password}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "twenty", "-h", "localhost", "-d", "twenty"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["--maxmemory-policy", "noeviction", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  redis-data:
+  server-local-data:
