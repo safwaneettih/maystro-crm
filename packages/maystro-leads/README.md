@@ -7,7 +7,7 @@ Each qualified lead goes into Twenty as a Company and an Opportunity linked to t
 ## Enable in Coolify
 
 1. In Twenty, open **Settings → APIs & Webhooks → API Keys** and create a key for the Maystro workspace. Give its role access to read and create Companies, Opportunities, Notes, and Note Targets.
-2. Set `LEADS_TWENTY_API_KEY` as a runtime environment variable on the Maystro Coolify application. The collector uses the existing `SERVER_URL` as its Twenty API origin.
+2. Set `LEADS_TWENTY_API_KEY` as a runtime environment variable on the Maystro Coolify application. The collector reaches the Twenty API over the private Compose network.
 3. Redeploy the application from `docker-compose.coolify.yml`. The collector runs at 08:00 Tunisia time. If you enable it later in the day, it runs once after startup. The schedule, browser profile, and deduplication state persist in `lead-collector-data`.
 
 Set `LEADS_CONFIG_JSON` as a runtime variable to override the defaults. For example, `{"max_ads_per_keyword":50,"min_score":4}` reduces the scan size and raises the score threshold. The original French and Arabic keywords remain the default unless you supply a `keywords` array.

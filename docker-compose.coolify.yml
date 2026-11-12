@@ -82,7 +82,7 @@ services:
     build: ./packages/maystro-leads
     init: true
     environment:
-      TWENTY_URL: ${SERVER_URL:?Set the public CRM URL}
+      TWENTY_URL: http://server:3000
       LEADS_TWENTY_API_KEY: ${LEADS_TWENTY_API_KEY:-}
       LEADS_CONFIG_JSON: ${LEADS_CONFIG_JSON:-}
     volumes:
