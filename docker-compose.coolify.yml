@@ -78,7 +78,23 @@ services:
       retries: 10
     restart: unless-stopped
 
+  lead-collector:
+    build: ./packages/maystro-leads
+    init: true
+    environment:
+      TWENTY_URL: ${SERVER_URL:?Set the public CRM URL}
+      LEADS_TWENTY_API_KEY: ${LEADS_TWENTY_API_KEY:-}
+      LEADS_CONFIG_JSON: ${LEADS_CONFIG_JSON:-}
+    volumes:
+      - lead-collector-data:/data/leads
+    shm_size: 512m
+    depends_on:
+      server:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   db-data:
   redis-data:
   server-local-data:
+  lead-collector-data:

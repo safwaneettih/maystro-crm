@@ -1,0 +1,6 @@
+*
+!Dockerfile
+!requirements.txt
+!leads_daily.py
+!schedule.py
+!twenty_import.py
