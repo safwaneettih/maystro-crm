@@ -12,6 +12,10 @@ Each qualified lead goes into Twenty as a Company and an Opportunity linked to t
 
 Set `LEADS_CONFIG_JSON` as a runtime variable to override the defaults. For example, `{"max_ads_per_keyword":50,"min_score":4}` reduces the scan size and raises the score threshold. The original French and Arabic keywords remain the default unless you supply a `keywords` array.
 
+## Manage the collector in Twenty
+
+Set `LEADS_WORKSPACE_ID` to the workspace that owns the collector API key and `LEADS_CONTROL_SECRET` to a separate random secret in Coolify. Redeploy, then open **Settings → Workspace → Lead collector** with workspace settings access. The page shows the import counts and last run. Use **Run now** for a manual collection, or save the daily schedule switch, search phrases, and minimum score. Saved dashboard settings persist in the collector volume and take precedence over the corresponding defaults.
+
 ## Run manually
 
 Set the Compose environment variables and run these from the repository root. Use `--mode full` for a scan without the date filter.

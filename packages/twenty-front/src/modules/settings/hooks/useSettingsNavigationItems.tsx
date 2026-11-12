@@ -30,6 +30,7 @@ import {
   IconServer,
   IconSettings2,
   IconSparkles,
+  IconTargetArrow,
   IconUserCircle,
   IconUsers,
 } from 'twenty-ui/icon';
@@ -129,6 +130,12 @@ const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
           label: t`General`,
           path: SettingsPath.General,
           Icon: IconSettings2,
+          isHidden: !permissionFlagMap[PermissionFlagType.WORKSPACE],
+        },
+        {
+          label: t`Lead collector`,
+          path: SettingsPath.LeadCollector,
+          Icon: IconTargetArrow,
           isHidden: !permissionFlagMap[PermissionFlagType.WORKSPACE],
         },
         {

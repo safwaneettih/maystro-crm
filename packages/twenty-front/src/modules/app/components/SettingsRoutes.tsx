@@ -190,6 +190,12 @@ const SettingsLogicFunctionDetail = lazy(() =>
   ),
 );
 
+const SettingsLeadCollector = lazy(() =>
+  import('~/pages/settings/lead-collector/SettingsLeadCollector').then((module) => ({
+    default: module.SettingsLeadCollector,
+  })),
+);
+
 const SettingsGeneral = lazy(() =>
   import('~/pages/settings/general/SettingsGeneral').then((module) => ({
     default: module.SettingsGeneral,
@@ -931,6 +937,10 @@ const createSettingsRouteElements = ({
       }
     >
       <Route path={SettingsPath.General} element={<SettingsGeneral />} />
+      <Route
+        path={SettingsPath.LeadCollector}
+        element={<SettingsLeadCollector />}
+      />
       <Route
         path={SettingsPath.WorkspaceCommunications}
         element={<SettingsWorkspaceCommunications />}

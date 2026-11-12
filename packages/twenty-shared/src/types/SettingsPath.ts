@@ -45,6 +45,7 @@ export enum SettingsPath {
   WorkspaceMembersPage = 'members',
   WorkspaceMemberPage = 'members/:workspaceMemberId',
   General = 'general',
+  LeadCollector = 'lead-collector',
   Subdomain = 'general/subdomain',
   CustomDomain = 'general/custom-domain',
   WorkspaceCommunications = 'communications',

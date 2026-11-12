@@ -17,6 +17,8 @@ services:
     environment:
       <<: *twenty-environment
       NODE_PORT: 3000
+      LEADS_CONTROL_SECRET: ${LEADS_CONTROL_SECRET:-}
+      LEADS_WORKSPACE_ID: ${LEADS_WORKSPACE_ID:-}
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
     expose:
@@ -84,6 +86,7 @@ services:
     environment:
       TWENTY_URL: http://server:3000
       LEADS_TWENTY_API_KEY: ${LEADS_TWENTY_API_KEY:-}
+      LEADS_CONTROL_SECRET: ${LEADS_CONTROL_SECRET:-}
       LEADS_CONFIG_JSON: ${LEADS_CONFIG_JSON:-}
     volumes:
       - lead-collector-data:/data/leads
