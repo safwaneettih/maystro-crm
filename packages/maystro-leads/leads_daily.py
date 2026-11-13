@@ -165,6 +165,9 @@ CREATE TABLE IF NOT EXISTS ids (
 CREATE TABLE IF NOT EXISTS pushes (
   page_key TEXT, adapter TEXT, ref TEXT, pushed_at TEXT, PRIMARY KEY (page_key, adapter)
 );
+CREATE TABLE IF NOT EXISTS twenty_note_sync (
+  page_key TEXT PRIMARY KEY, enriched_at TEXT NOT NULL
+);
 """
 
 
@@ -413,7 +416,7 @@ def parse_page_text(text):
 
 def enrich_pending(conn, cfg):
     rows = conn.execute(
-        "SELECT page_key, fb_url FROM leads WHERE status='new' AND enriched_at IS NULL "
+        "SELECT page_key, fb_url FROM leads WHERE status IN ('new','pushed') AND enriched_at IS NULL "
         "ORDER BY score DESC, ads DESC LIMIT ?", (cfg["enrich_per_run"],)).fetchall()
     if not rows:
         return 0
@@ -496,6 +499,33 @@ def push_pending(conn, cfg, client):
     return int(failed)
 
 
+def mark_note_synced(conn, row):
+    conn.execute("INSERT OR REPLACE INTO twenty_note_sync VALUES (?, ?)",
+                 (row["page_key"], row["enriched_at"]))
+
+
+def sync_enriched_notes(conn, cfg, client):
+    rows = conn.execute(
+        "SELECT l.* FROM leads l JOIN pushes p ON p.page_key=l.page_key AND p.adapter='twenty' "
+        "LEFT JOIN twenty_note_sync s ON s.page_key=l.page_key "
+        "WHERE l.enriched_at IS NOT NULL AND s.enriched_at IS NOT l.enriched_at "
+        "ORDER BY l.enriched_at, l.page_key"
+    ).fetchall()
+    failed = False
+    for row in rows:
+        try:
+            client.sync_note(lead_dict(row))
+        except TwentyRequestError as error:
+            log(f"[twenty] {row['page_key']}: {error}. Note conservée pour un nouvel essai.", cfg)
+            failed = True
+            if error.status in (None, 401, 403, 429, 502, 503, 504):
+                break
+            continue
+        with conn:
+            mark_note_synced(conn, row)
+    return int(failed)
+
+
 def cmd_run(args):
     load_env()
     cfg = load_config()
@@ -515,7 +545,7 @@ def cmd_run(args):
             log(f"Enrichissement de {cfg['enrich_per_run']} pages maximum…", cfg)
             log(f"  {enrich_pending(conn, cfg)} page(s) enrichie(s)", cfg)
         if client:
-            return push_pending(conn, cfg, client)
+            return sync_enriched_notes(conn, cfg, client) | push_pending(conn, cfg, client)
 
 
 def cmd_push(_):
@@ -523,7 +553,7 @@ def cmd_push(_):
     cfg = load_config()
     client = TwentyClient.from_environment()
     with closing(open_db(cfg)) as conn:
-        return push_pending(conn, cfg, client)
+        return sync_enriched_notes(conn, cfg, client) | push_pending(conn, cfg, client)
 
 
 def cmd_stats(_):

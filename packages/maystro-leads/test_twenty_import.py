@@ -2,15 +2,35 @@ import json
 import tempfile
 import threading
 import unittest
+from unittest.mock import Mock
 from contextlib import closing
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
-from leads_daily import DEFAULT_CONFIG, aggregate_cards, ingest, open_db, push_pending
+from leads_daily import DEFAULT_CONFIG, aggregate_cards, ingest, open_db, push_pending, sync_enriched_notes
 from twenty_import import TwentyClient
 
 
 class TwentyImportTest(unittest.TestCase):
+    def test_existing_note_gets_enrichment_once_and_keeps_manual_content(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = {**DEFAULT_CONFIG, "db_path": f"{tmp}/leads.db"}
+            client = TwentyClient("http://localhost", "test-key")
+            client.find = Mock(return_value={"bodyV2": {"markdown": "Call again Friday"}})
+            client.request = Mock()
+            with closing(open_db(cfg)) as conn:
+                conn.execute("INSERT INTO leads (page_key,status,score,email,enriched_at) VALUES (?,?,?,?,?)",
+                             ("shop", "pushed", 4, "sales@example.com", "2026-11-13"))
+                conn.execute("INSERT INTO pushes VALUES ('shop','twenty','opportunity','2026-11-12')")
+                self.assertEqual(sync_enriched_notes(conn, cfg, client), 0)
+                self.assertEqual(sync_enriched_notes(conn, cfg, client), 0)
+            client.request.assert_called_once()
+            method, path, payload, _ = client.request.call_args.args
+            self.assertEqual(method, "PATCH")
+            self.assertTrue(path.startswith("notes/"))
+            self.assertIn("Call again Friday", payload["bodyV2"]["markdown"])
+            self.assertIn("sales@example.com", payload["bodyV2"]["markdown"])
+
     def test_partial_import_can_resume_without_overwriting_an_opportunity(self):
         collections = {name: {} for name in ("companies", "opportunities", "notes", "noteTargets")}
         singular = {"companies": "company", "opportunities": "opportunity", "notes": "note", "noteTargets": "noteTarget"}

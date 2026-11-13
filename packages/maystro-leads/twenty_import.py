@@ -7,6 +7,29 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 from uuid import NAMESPACE_URL, uuid5
 
 
+def lead_record_id(lead, record_type):
+    return str(uuid5(NAMESPACE_URL, f"maystro:meta-ad-library:{record_type}:{lead['page_key']}"))
+
+
+def qualification_evidence(lead):
+    return [
+        ("Source", "Meta Ad Library"),
+        ("Score", f"{lead['score']}/5"),
+        ("Signaux", lead["reason"]),
+        ("Annonces", lead["ads"]),
+        ("Paiement à la livraison", "oui" if lead["cod"] else "non"),
+        ("Livraison gratuite", "oui" if lead["free_delivery"] else "non"),
+        ("Facebook", lead["facebook"]),
+        ("Site", lead["website"]),
+        ("Followers", lead["followers"]),
+        ("Dernière publication", lead["last_post"]),
+        ("Téléphone", " / ".join(filter(None, (lead["phone1"], lead["phone2"])))),
+        ("Email", lead["email"]),
+        ("Canal conseillé", lead["channel"]),
+        ("Détecté le", lead["first_seen"]),
+    ]
+
+
 class TwentyRequestError(RuntimeError):
     def __init__(self, method, path, status=None):
         self.status = status
@@ -88,7 +111,7 @@ class TwentyClient:
 
     def import_lead(self, lead, country):
         def record_id(record_type):
-            return str(uuid5(NAMESPACE_URL, f"maystro:meta-ad-library:{record_type}:{lead['page_key']}"))
+            return lead_record_id(lead, record_type)
 
         company = {"name": lead["name"], "address": {"addressCountry": country}}
         company_id = None
@@ -101,23 +124,8 @@ class TwentyClient:
             "companyId": company_id,
         })
 
-        evidence = [
-            ("Source", "Meta Ad Library"),
-            ("Score", f"{lead['score']}/5"),
-            ("Signaux", lead["reason"]),
-            ("Annonces", lead["ads"]),
-            ("Paiement à la livraison", "oui" if lead["cod"] else "non"),
-            ("Livraison gratuite", "oui" if lead["free_delivery"] else "non"),
-            ("Facebook", lead["facebook"]),
-            ("Site", lead["website"]),
-            ("Followers", lead["followers"]),
-            ("Dernière publication", lead["last_post"]),
-            ("Téléphone", " / ".join(filter(None, (lead["phone1"], lead["phone2"])))),
-            ("Email", lead["email"]),
-            ("Canal conseillé", lead["channel"]),
-            ("Détecté le", lead["first_seen"]),
-        ]
-        markdown = "\n\n".join(f"**{label}** — {value}" for label, value in evidence if value not in (None, ""))
+        markdown = "\n\n".join(f"**{label}** — {value}" for label, value in qualification_evidence(lead)
+                               if value not in (None, ""))
         note_id = self.create_once("notes", record_id("note"), {
             "title": "Qualification Meta Ad Library",
             "bodyV2": {"markdown": markdown},
@@ -127,3 +135,19 @@ class TwentyClient:
             "targetOpportunityId": opportunity_id,
         })
         return opportunity_id
+
+    def sync_note(self, lead):
+        note_id = lead_record_id(lead, "note")
+        note = self.find("notes", note_id)
+        if note is None:
+            return
+        current = (note.get("bodyV2") or {}).get("markdown") or ""
+        existing_lines = set(current.splitlines())
+        labels = {"Site", "Followers", "Dernière publication", "Téléphone", "Email", "Canal conseillé"}
+        additions = [line for label, value in qualification_evidence(lead)
+                     if label in labels and value not in (None, "")
+                     and (line := f"**{label}** — {value}") not in existing_lines]
+        if additions:
+            markdown = "\n\n".join(filter(None, [current.rstrip(), *additions]))
+            self.request("PATCH", f"notes/{note_id}", {"bodyV2": {"markdown": markdown, "tiptap": None}},
+                         {"depth": 0})
