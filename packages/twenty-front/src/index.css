@@ -1,5 +1,35 @@
 @import './viewport-zoom.css';
 
+:root.light {
+  --t-accent-primary: #dff0ff;
+  --t-accent-secondary: #dff0ff;
+  --t-accent-tertiary: #edf7ff;
+  --t-accent-quaternary: #f5faff;
+  --t-accent-accent8: #76afe1;
+  --t-accent-accent9: #0062b9;
+  --t-accent-accent10: #00539e;
+  --t-accent-accent11: #005aa9;
+  --t-accent-accent12: #123456;
+  --t-background-secondary: #f5faff;
+  --t-background-tertiary: #edf5fc;
+  --t-buttons-secondary-text-color: #005aa9;
+}
+
+:root.dark {
+  --t-accent-primary: #17344e;
+  --t-accent-secondary: #17344e;
+  --t-accent-tertiary: #12283d;
+  --t-accent-quaternary: #101f2d;
+  --t-accent-accent8: #396b96;
+  --t-accent-accent9: #0062b9;
+  --t-accent-accent10: #0068c2;
+  --t-accent-accent11: #83c6ff;
+  --t-accent-accent12: #dff0ff;
+  --t-background-secondary: #131e29;
+  --t-background-tertiary: #172431;
+  --t-buttons-secondary-text-color: #83c6ff;
+}
+
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;

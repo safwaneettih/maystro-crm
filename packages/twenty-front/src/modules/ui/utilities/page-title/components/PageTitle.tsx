@@ -15,7 +15,7 @@ export const PageTitle = (props: PageTitleProps) => {
 
   return (
     <Helmet>
-      <title>{props.title}</title>
+      <title>{`${props.title} · Maystro CRM`}</title>
     </Helmet>
   );
 };
