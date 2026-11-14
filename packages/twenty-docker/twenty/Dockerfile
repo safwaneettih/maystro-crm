@@ -51,6 +51,8 @@ RUN yarn workspaces focus twenty-monorepo twenty-server twenty-emails twenty-sha
 
 FROM server-deps AS twenty-server-build
 
+ENV THREADS_WORKER_INIT_TIMEOUT=120000
+
 COPY ./packages/twenty-emails /app/packages/twenty-emails
 COPY ./packages/twenty-shared /app/packages/twenty-shared
 COPY ./packages/twenty-client-sdk /app/packages/twenty-client-sdk
@@ -72,6 +74,8 @@ RUN yarn workspaces focus --production twenty-emails twenty-shared twenty-client
 
 
 FROM front-deps AS twenty-front-build
+
+ENV THREADS_WORKER_INIT_TIMEOUT=120000
 
 COPY ./packages/twenty-front /app/packages/twenty-front
 COPY ./packages/twenty-front-component-renderer /app/packages/twenty-front-component-renderer
